@@ -1,0 +1,214 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "application/vnd.databricks.v1+cell": {
+     "cellMetadata": {},
+     "inputWidgets": {},
+     "nuid": "de34d8c2-153c-46bb-9276-78c806df817e",
+     "showTitle": false,
+     "tableResultSettingsMap": {},
+     "title": ""
+    }
+   },
+   "source": [
+    "\n",
+    "<div style=\"text-align: center; line-height: 0; padding-top: 9px;\">\n",
+    "  <img src=\"https://databricks.com/wp-content/uploads/2018/03/db-academy-rgb-1200px.png\" alt=\"Databricks Learning\">\n",
+    "</div>\n"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "application/vnd.databricks.v1+cell": {
+     "cellMetadata": {},
+     "inputWidgets": {},
+     "nuid": "cf7384a8-3aa3-4c7b-a797-b62c97749d80",
+     "showTitle": false,
+     "tableResultSettingsMap": {},
+     "title": ""
+    }
+   },
+   "source": [
+    "# Data Transformation\n",
+    "This notebook performs feature engineering on the cleaned dataset."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "application/vnd.databricks.v1+cell": {
+     "cellMetadata": {},
+     "inputWidgets": {},
+     "nuid": "b2ac04c8-589b-49b8-b3c6-1ee07f34fb00",
+     "showTitle": false,
+     "tableResultSettingsMap": {},
+     "title": ""
+    }
+   },
+   "source": [
+    "## Requirements\n",
+    "\n",
+    "Please review the following requirements before starting the lesson:\n",
+    "\n",
+    "* To run this notebook, you need a classic cluster running one of the following Databricks runtime(s): **16.2.x-cpu-ml-scala2.12**. **Do NOT use serverless compute to run this notebook**."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "application/vnd.databricks.v1+cell": {
+     "cellMetadata": {},
+     "inputWidgets": {},
+     "nuid": "7d014a05-7dc2-44c6-bc75-0cb834e5f64e",
+     "showTitle": false,
+     "tableResultSettingsMap": {},
+     "title": ""
+    }
+   },
+   "source": [
+    "## Classroom Setup\n",
+    "\n",
+    "Before starting the demo, run the provided classroom setup script."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 0,
+   "metadata": {
+    "application/vnd.databricks.v1+cell": {
+     "cellMetadata": {},
+     "inputWidgets": {},
+     "nuid": "9088684a-cc3e-4ad5-94fc-91fce4a26d4d",
+     "showTitle": false,
+     "tableResultSettingsMap": {},
+     "title": ""
+    }
+   },
+   "outputs": [],
+   "source": [
+    "%run ../../../Includes/Classroom-Setup"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 0,
+   "metadata": {
+    "application/vnd.databricks.v1+cell": {
+     "cellMetadata": {},
+     "inputWidgets": {},
+     "nuid": "2bbbe5ed-26da-40f2-9f69-88912342754a",
+     "showTitle": false,
+     "tableResultSettingsMap": {},
+     "title": ""
+    }
+   },
+   "outputs": [],
+   "source": [
+    "# Import necessary libraries\n",
+    "from pyspark.sql.functions import col, log, sqrt\n",
+    "# Read the cleaned data from Delta format\n",
+    "cleaned_data = spark.table(f\"{DA.catalog_name}.{DA.schema_name}.cleaned_diabetes_data\")\n",
+    "\n",
+    "# Display the cleaned data\n",
+    "display(cleaned_data)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 0,
+   "metadata": {
+    "application/vnd.databricks.v1+cell": {
+     "cellMetadata": {},
+     "inputWidgets": {},
+     "nuid": "3cb713dc-90bd-46c1-bec1-02c0331ff006",
+     "showTitle": false,
+     "tableResultSettingsMap": {},
+     "title": ""
+    }
+   },
+   "outputs": [],
+   "source": [
+    "# Apply feature engineering (example transformations)\n",
+    "transformed_data = cleaned_data \\\n",
+    "    .withColumn(\"log_BMI\", log(col(\"BMI\") + 1)) \\\n",
+    "    .withColumn(\"sqrt_PhysHlth\", sqrt(col(\"PhysHlth\") + 1)) \\\n",
+    "    .withColumn(\"log_Age\", log(col(\"Age\") + 1)) \\\n",
+    "    .withColumn(\"sqrt_MentHlth\", sqrt(col(\"MentHlth\") + 1))\n",
+    "\n",
+    "# Drop unnecessary columns\n",
+    "columns_to_drop = [\"HighChol\", \"HvyAlcoholConsump\"]  # Example columns to drop; adjust as needed\n",
+    "transformed_data = transformed_data.drop(*columns_to_drop)\n",
+    "\n",
+    "# Display the transformed data\n",
+    "display(transformed_data)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 0,
+   "metadata": {
+    "application/vnd.databricks.v1+cell": {
+     "cellMetadata": {},
+     "inputWidgets": {},
+     "nuid": "2ca03e92-0d0a-44db-963e-c92438e6b0ad",
+     "showTitle": false,
+     "tableResultSettingsMap": {},
+     "title": ""
+    }
+   },
+   "outputs": [],
+   "source": [
+    "# Define the path to save the transformed data\n",
+    "transformed_data_path = f\"{DA.catalog_name}.{DA.schema_name}.transformed_diabetes_data\"\n",
+    "\n",
+    "# Write the transformed DataFrame to Delta format\n",
+    "transformed_data.write.format(\"delta\").mode(\"overwrite\").saveAsTable(transformed_data_path)\n",
+    "\n",
+    "print(f\"Transformed data saved to: {transformed_data_path}\")"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "application/vnd.databricks.v1+cell": {
+     "cellMetadata": {},
+     "inputWidgets": {},
+     "nuid": "63cd1337-35da-45d5-895d-bf28f64adb08",
+     "showTitle": false,
+     "tableResultSettingsMap": {},
+     "title": ""
+    }
+   },
+   "source": [
+    "\n",
+    "&copy; 2025 Databricks, Inc. All rights reserved.<br/>\n",
+    "Apache, Apache Spark, Spark and the Spark logo are trademarks of the \n",
+    "<a href=\"https://www.apache.org/\">Apache Software Foundation</a>.<br/>\n",
+    "<br/><a href=\"https://databricks.com/privacy-policy\">Privacy Policy</a> | \n",
+    "<a href=\"https://databricks.com/terms-of-use\">Terms of Use</a> | \n",
+    "<a href=\"https://help.databricks.com/\">Support</a>"
+   ]
+  }
+ ],
+ "metadata": {
+  "application/vnd.databricks.v1+notebook": {
+   "computePreferences": null,
+   "dashboards": [],
+   "environmentMetadata": null,
+   "language": "python",
+   "notebookMetadata": {
+    "pythonIndentUnit": 4
+   },
+   "notebookName": "data_transformation",
+   "widgets": {}
+  },
+  "language_info": {
+   "name": "python"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 0
+}
